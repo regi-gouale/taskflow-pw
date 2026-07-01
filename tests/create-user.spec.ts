@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test("Créer un utilisateur sur TaskFlow", async ({ page }) => {
   await page.goto(`./sign-up`);
