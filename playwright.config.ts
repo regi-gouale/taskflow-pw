@@ -10,6 +10,7 @@ export default defineConfig({
     baseURL: "https://taskflow.gouale.com",
     trace: "on",
     screenshot: "only-on-failure",
+    video: "retain-on-failure",
   },
   projects: [
     {
