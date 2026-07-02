@@ -17,7 +17,12 @@ test.describe("Accès direct authentifié", () => {
     authenticatedUser,
     dashboardPage,
   }) => {
-    await dashboardPage.expectLoaded();
-    await dashboardPage.expectUserEmailVisible(authenticatedUser.email);
+    await test.step("Vérifier le chargement du dashboard", async () => {
+      await dashboardPage.expectLoaded();
+    });
+
+    await test.step("Vérifier l'email de l'utilisateur connecté", async () => {
+      await dashboardPage.expectUserEmailVisible(authenticatedUser.email);
+    });
   });
 });

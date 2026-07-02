@@ -19,26 +19,37 @@ test.describe("Inscription", () => {
     testData,
     signUpPage,
   }) => {
-    const user = testData.user();
+    const user = await test.step("Préparer un utilisateur unique", async () =>
+      testData.user());
 
-    await signUpPage.signUp(user);
+    await test.step("Soumettre le formulaire d'inscription", async () => {
+      await signUpPage.signUp(user);
+    });
 
-    await expect(signUpPage.successAlert).toBeVisible();
-    await expect(page).not.toHaveURL(/\/sign-up$/);
-    await expect(page.getByText(user.email)).toBeVisible();
+    await test.step("Vérifier la création du compte", async () => {
+      await expect(signUpPage.successAlert).toBeVisible();
+      await expect(page).not.toHaveURL(/\/sign-up$/);
+      await expect(page.getByText(user.email)).toBeVisible();
+    });
   });
 
   test("affiche les champs attendus et le texte d'aide", async ({
     testData,
     signUpPage,
   }) => {
-    const user = testData.user();
+    const user =
+      await test.step("Préparer des données de formulaire", async () =>
+        testData.user());
 
-    await signUpPage.fillForm(user);
+    await test.step("Renseigner le formulaire", async () => {
+      await signUpPage.fillForm(user);
+    });
 
-    await expect(signUpPage.passwordHint).toBeVisible();
-    await expect(signUpPage.fullNameInput).toHaveValue(user.fullName);
-    await expect(signUpPage.emailInput).toHaveValue(user.email);
+    await test.step("Vérifier les champs et le texte d'aide", async () => {
+      await expect(signUpPage.passwordHint).toBeVisible();
+      await expect(signUpPage.fullNameInput).toHaveValue(user.fullName);
+      await expect(signUpPage.emailInput).toHaveValue(user.email);
+    });
   });
 
   test("refuse une inscription si les mots de passe ne correspondent pas", async ({
@@ -46,12 +57,18 @@ test.describe("Inscription", () => {
     testData,
     signUpPage,
   }) => {
-    const user = testData.user();
+    const user =
+      await test.step("Préparer un utilisateur avec mot de passe de confirmation différent", async () =>
+        testData.user());
 
-    await signUpPage.signUp(user, "different-password");
+    await test.step("Soumettre le formulaire avec mismatch", async () => {
+      await signUpPage.signUp(user, "different-password");
+    });
 
-    await expect(signUpPage.passwordMismatchAlert).toBeVisible();
-    await expect(page).toHaveURL(/\/sign-up$/);
+    await test.step("Vérifier l'erreur de confirmation", async () => {
+      await expect(signUpPage.passwordMismatchAlert).toBeVisible();
+      await expect(page).toHaveURL(/\/sign-up$/);
+    });
   });
 
   test("reste sur la page d'inscription si le formulaire est vide", async ({
@@ -59,19 +76,24 @@ test.describe("Inscription", () => {
     testData,
     signUpPage,
   }) => {
-    const user = testData.user();
+    const user = await test.step("Préparer un utilisateur de base", async () =>
+      testData.user());
 
-    await signUpPage.fillForm({
-      ...user,
-      fullName: "",
-      email: "",
-      password: "",
+    await test.step("Soumettre le formulaire vide", async () => {
+      await signUpPage.fillForm({
+        ...user,
+        fullName: "",
+        email: "",
+        password: "",
+      });
+      await signUpPage.submit();
     });
-    await signUpPage.submit();
 
-    await expect(page).toHaveURL(/\/sign-up$/);
-    await expect(signUpPage.fullNameInput).toHaveValue("");
-    await expect(signUpPage.emailInput).toHaveValue("");
+    await test.step("Vérifier qu'aucune inscription n'est effectuée", async () => {
+      await expect(page).toHaveURL(/\/sign-up$/);
+      await expect(signUpPage.fullNameInput).toHaveValue("");
+      await expect(signUpPage.emailInput).toHaveValue("");
+    });
   });
 
   test("fournit la navigation vers la page de connexion", async ({
@@ -79,9 +101,13 @@ test.describe("Inscription", () => {
     signInPage,
     signUpPage,
   }) => {
-    await signUpPage.goToSignIn();
+    await test.step("Cliquer sur le lien de connexion", async () => {
+      await signUpPage.goToSignIn();
+    });
 
-    await expect(page).toHaveURL(/\/sign-in$/);
-    await signInPage.expectLoaded();
+    await test.step("Vérifier la page de connexion", async () => {
+      await expect(page).toHaveURL(/\/sign-in$/);
+      await signInPage.expectLoaded();
+    });
   });
 });
