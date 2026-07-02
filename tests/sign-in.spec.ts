@@ -1,17 +1,5 @@
-import { faker } from "@faker-js/faker";
 import { expect, type Page, test } from "@playwright/test";
-
-type UserCredentials = {
-  fullName: string;
-  email: string;
-  password: string;
-};
-
-const uniqueUser = (): UserCredentials => ({
-  fullName: faker.person.fullName(),
-  email: faker.internet.email(),
-  password: "azertyuiop",
-});
+import { type UserCredentials, userFactory } from "../factories/user.factory";
 
 const openSignIn = async (page: Page) => {
   await page.goto("./sign-in");
@@ -60,7 +48,7 @@ const createUserThroughSignUp = async (page: Page, user: UserCredentials) => {
 
 test.describe("Connexion", () => {
   test("connecte réellement un utilisateur existant", async ({ page }) => {
-    const user = uniqueUser();
+    const user = userFactory.build();
 
     await createUserThroughSignUp(page, user);
     await page.context().clearCookies();
@@ -114,8 +102,13 @@ test.describe("Connexion", () => {
   test("refuse une connexion avec des identifiants inconnus", async ({
     page,
   }) => {
+    const unknownUser = userFactory.build({
+      email: `missing-${Date.now()}@test.com`,
+      password: "wrong-password",
+    });
+
     await openSignIn(page);
-    await signIn(page, `missing-${Date.now()}@test.com`, "wrong-password");
+    await signIn(page, unknownUser.email, unknownUser.password);
 
     await expect(
       page

@@ -1,19 +1,5 @@
-import { faker } from "@faker-js/faker";
 import { expect, type Page, test } from "@playwright/test";
-
-type SignUpUser = {
-  fullName: string;
-  email: string;
-  password: string;
-};
-
-const uniqueUser = (): SignUpUser => {
-  return {
-    fullName: faker.person.fullName(),
-    email: faker.internet.email(),
-    password: "azertyuiop",
-  };
-};
+import { type UserCredentials, userFactory } from "../factories/user.factory";
 
 const openSignUp = async (page: Page) => {
   await page.goto("./sign-up");
@@ -34,7 +20,7 @@ const openSignUp = async (page: Page) => {
 
 const fillSignUpForm = async (
   page: Page,
-  user: SignUpUser,
+  user: UserCredentials,
   confirmPassword = user.password,
 ) => {
   await page.getByRole("textbox", { name: "Nom" }).fill(user.fullName);
@@ -55,7 +41,7 @@ const submitSignUp = async (page: Page) => {
 
 test.describe("Inscription", () => {
   test("crée réellement un utilisateur unique", async ({ page }) => {
-    const user = uniqueUser();
+    const user = userFactory.build();
 
     await openSignUp(page);
     await fillSignUpForm(page, user);
@@ -71,7 +57,7 @@ test.describe("Inscription", () => {
   });
 
   test("affiche les champs attendus et le texte d'aide", async ({ page }) => {
-    const user = uniqueUser();
+    const user = userFactory.build();
 
     await openSignUp(page);
     await fillSignUpForm(page, user);
@@ -88,7 +74,7 @@ test.describe("Inscription", () => {
   test("refuse une inscription si les mots de passe ne correspondent pas", async ({
     page,
   }) => {
-    const user = uniqueUser();
+    const user = userFactory.build();
 
     await openSignUp(page);
     await fillSignUpForm(page, user, "different-password");
@@ -105,7 +91,7 @@ test.describe("Inscription", () => {
   test("reste sur la page d'inscription si le formulaire est vide", async ({
     page,
   }) => {
-    const user = uniqueUser();
+    const user = userFactory.build();
 
     await openSignUp(page);
     await fillSignUpForm(page, {
