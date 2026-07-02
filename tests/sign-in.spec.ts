@@ -1,14 +1,14 @@
-import { userFactory } from "@/factories/user.factory";
 import { expect, test } from "@/fixtures/page.fixture";
 
 test.describe("Connexion", () => {
   test("connecte réellement un utilisateur existant", async ({
     page,
+    testData,
     signInPage,
     signUpPage,
     dashboardPage,
   }) => {
-    const user = userFactory.build();
+    const user = testData.user();
 
     await signUpPage.goto();
     await signUpPage.signUp(user);
@@ -60,9 +60,10 @@ test.describe("Connexion", () => {
 
   test("refuse une connexion avec des identifiants inconnus", async ({
     page,
+    testData,
     signInPage,
   }) => {
-    const unknownUser = userFactory.build({
+    const unknownUser = testData.user({
       email: `missing-${Date.now()}@test.com`,
       password: "wrong-password",
     });

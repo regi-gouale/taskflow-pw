@@ -1,5 +1,6 @@
-import { test as base, expect, type Page } from "@playwright/test";
-import { type UserCredentials, userFactory } from "@/factories/user.factory";
+import type { Page } from "@playwright/test";
+import type { UserCredentials } from "@/factories/user.factory";
+import { test as base, expect } from "@/fixtures/test-data.fixture";
 import { DashboardPage, SignInPage, SignUpPage } from "@/pages";
 
 type PageFixtures = {
@@ -11,8 +12,8 @@ type PageFixtures = {
 };
 
 export const test = base.extend<PageFixtures>({
-  authenticatedUser: async ({ dashboardPage, signUpPage }, use) => {
-    const user = userFactory.build();
+  authenticatedUser: async ({ dashboardPage, signUpPage, testData }, use) => {
+    const user = testData.user();
 
     await signUpPage.goto();
     await signUpPage.signUp(user);

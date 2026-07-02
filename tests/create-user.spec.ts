@@ -1,12 +1,12 @@
-import { userFactory } from "@/factories/user.factory";
 import { expect, test } from "@/fixtures/page.fixture";
 
 test.describe("Inscription", () => {
   test("crée réellement un utilisateur unique", async ({
     page,
+    testData,
     signUpPage,
   }) => {
-    const user = userFactory.build();
+    const user = testData.user();
 
     await signUpPage.goto();
     await signUpPage.expectLoaded();
@@ -18,9 +18,10 @@ test.describe("Inscription", () => {
   });
 
   test("affiche les champs attendus et le texte d'aide", async ({
+    testData,
     signUpPage,
   }) => {
-    const user = userFactory.build();
+    const user = testData.user();
 
     await signUpPage.goto();
     await signUpPage.expectLoaded();
@@ -33,9 +34,10 @@ test.describe("Inscription", () => {
 
   test("refuse une inscription si les mots de passe ne correspondent pas", async ({
     page,
+    testData,
     signUpPage,
   }) => {
-    const user = userFactory.build();
+    const user = testData.user();
 
     await signUpPage.goto();
     await signUpPage.expectLoaded();
@@ -47,9 +49,10 @@ test.describe("Inscription", () => {
 
   test("reste sur la page d'inscription si le formulaire est vide", async ({
     page,
+    testData,
     signUpPage,
   }) => {
-    const user = userFactory.build();
+    const user = testData.user();
 
     await signUpPage.goto();
     await signUpPage.expectLoaded();
