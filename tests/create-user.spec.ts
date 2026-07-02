@@ -1,3 +1,4 @@
+import { faker } from "@faker-js/faker";
 import { expect, type Page, test } from "@playwright/test";
 
 type SignUpUser = {
@@ -7,10 +8,9 @@ type SignUpUser = {
 };
 
 const uniqueUser = (): SignUpUser => {
-  const suffix = `${Date.now()}-${Math.floor(Math.random() * 100000)}`;
   return {
-    fullName: `Jean Test ${suffix}`,
-    email: `jean.${suffix}@test.com`,
+    fullName: faker.person.fullName(),
+    email: faker.internet.email(),
     password: "azertyuiop",
   };
 };
@@ -54,6 +54,22 @@ const submitSignUp = async (page: Page) => {
 };
 
 test.describe("Inscription", () => {
+  test("crée réellement un utilisateur unique", async ({ page }) => {
+    const user = uniqueUser();
+
+    await openSignUp(page);
+    await fillSignUpForm(page, user);
+    await submitSignUp(page);
+
+    await expect(
+      page
+        .getByRole("listitem")
+        .filter({ hasText: "Compte créé avec succès." }),
+    ).toBeVisible();
+    await expect(page).not.toHaveURL(/\/sign-up$/);
+    await expect(page.getByText(user.email)).toBeVisible();
+  });
+
   test("affiche les champs attendus et le texte d'aide", async ({ page }) => {
     const user = uniqueUser();
 
