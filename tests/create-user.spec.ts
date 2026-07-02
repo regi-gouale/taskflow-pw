@@ -1,11 +1,12 @@
-import { expect, test } from "@playwright/test";
-import { userFactory } from "../factories/user.factory";
-import { SignInPage, SignUpPage } from "../pages";
+import { userFactory } from "@/factories/user.factory";
+import { expect, test } from "@/fixtures/page.fixture";
 
 test.describe("Inscription", () => {
-  test("crée réellement un utilisateur unique", async ({ page }) => {
+  test("crée réellement un utilisateur unique", async ({
+    page,
+    signUpPage,
+  }) => {
     const user = userFactory.build();
-    const signUpPage = new SignUpPage(page);
 
     await signUpPage.goto();
     await signUpPage.expectLoaded();
@@ -16,9 +17,10 @@ test.describe("Inscription", () => {
     await expect(page.getByText(user.email)).toBeVisible();
   });
 
-  test("affiche les champs attendus et le texte d'aide", async ({ page }) => {
+  test("affiche les champs attendus et le texte d'aide", async ({
+    signUpPage,
+  }) => {
     const user = userFactory.build();
-    const signUpPage = new SignUpPage(page);
 
     await signUpPage.goto();
     await signUpPage.expectLoaded();
@@ -31,9 +33,9 @@ test.describe("Inscription", () => {
 
   test("refuse une inscription si les mots de passe ne correspondent pas", async ({
     page,
+    signUpPage,
   }) => {
     const user = userFactory.build();
-    const signUpPage = new SignUpPage(page);
 
     await signUpPage.goto();
     await signUpPage.expectLoaded();
@@ -45,9 +47,9 @@ test.describe("Inscription", () => {
 
   test("reste sur la page d'inscription si le formulaire est vide", async ({
     page,
+    signUpPage,
   }) => {
     const user = userFactory.build();
-    const signUpPage = new SignUpPage(page);
 
     await signUpPage.goto();
     await signUpPage.expectLoaded();
@@ -64,10 +66,11 @@ test.describe("Inscription", () => {
     await expect(signUpPage.emailInput).toHaveValue("");
   });
 
-  test("fournit la navigation vers la page de connexion", async ({ page }) => {
-    const signInPage = new SignInPage(page);
-    const signUpPage = new SignUpPage(page);
-
+  test("fournit la navigation vers la page de connexion", async ({
+    page,
+    signInPage,
+    signUpPage,
+  }) => {
     await signUpPage.goto();
     await signUpPage.expectLoaded();
     await signUpPage.goToSignIn();

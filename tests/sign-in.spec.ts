@@ -1,13 +1,14 @@
-import { expect, test } from "@playwright/test";
-import { userFactory } from "../factories/user.factory";
-import { DashboardPage, SignInPage, SignUpPage } from "../pages";
+import { userFactory } from "@/factories/user.factory";
+import { expect, test } from "@/fixtures/page.fixture";
 
 test.describe("Connexion", () => {
-  test("connecte réellement un utilisateur existant", async ({ page }) => {
+  test("connecte réellement un utilisateur existant", async ({
+    page,
+    signInPage,
+    signUpPage,
+    dashboardPage,
+  }) => {
     const user = userFactory.build();
-    const signInPage = new SignInPage(page);
-    const signUpPage = new SignUpPage(page);
-    const dashboardPage = new DashboardPage(page);
 
     await signUpPage.goto();
     await signUpPage.signUp(user);
@@ -28,19 +29,15 @@ test.describe("Connexion", () => {
   });
 
   test("affiche les champs de connexion et les liens associés", async ({
-    page,
+    signInPage,
   }) => {
-    const signInPage = new SignInPage(page);
-
     await signInPage.goto();
     await signInPage.expectLoaded();
     await expect(signInPage.forgotPasswordLink).toBeVisible();
     await expect(signInPage.createAccountLink).toBeVisible();
   });
 
-  test("gère un email invalide", async ({ page }) => {
-    const signInPage = new SignInPage(page);
-
+  test("gère un email invalide", async ({ page, signInPage }) => {
     await signInPage.goto();
     await signInPage.expectLoaded();
     await signInPage.signIn("email-invalide", "azertyuiop");
@@ -49,9 +46,10 @@ test.describe("Connexion", () => {
     await expect(signInPage.emailInput).toHaveValue("email-invalide");
   });
 
-  test("refuse une connexion quand les champs sont vides", async ({ page }) => {
-    const signInPage = new SignInPage(page);
-
+  test("refuse une connexion quand les champs sont vides", async ({
+    page,
+    signInPage,
+  }) => {
     await signInPage.goto();
     await signInPage.expectLoaded();
     await signInPage.signIn("", "");
@@ -62,8 +60,8 @@ test.describe("Connexion", () => {
 
   test("refuse une connexion avec des identifiants inconnus", async ({
     page,
+    signInPage,
   }) => {
-    const signInPage = new SignInPage(page);
     const unknownUser = userFactory.build({
       email: `missing-${Date.now()}@test.com`,
       password: "wrong-password",
@@ -77,9 +75,10 @@ test.describe("Connexion", () => {
     await expect(page).toHaveURL(/\/sign-in$/);
   });
 
-  test("fournit la navigation vers la page d'inscription", async ({ page }) => {
-    const signInPage = new SignInPage(page);
-
+  test("fournit la navigation vers la page d'inscription", async ({
+    page,
+    signInPage,
+  }) => {
     await signInPage.goto();
     await signInPage.expectLoaded();
     await signInPage.goToSignUp();
@@ -90,9 +89,10 @@ test.describe("Connexion", () => {
     ).toBeVisible();
   });
 
-  test("fournit la navigation vers mot de passe oublié", async ({ page }) => {
-    const signInPage = new SignInPage(page);
-
+  test("fournit la navigation vers mot de passe oublié", async ({
+    page,
+    signInPage,
+  }) => {
     await signInPage.goto();
     await signInPage.expectLoaded();
     await signInPage.goToForgotPassword();

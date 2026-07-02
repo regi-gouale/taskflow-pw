@@ -1,3 +1,3 @@
-export { DashboardPage } from "./dashboard.page";
-export { SignInPage } from "./sign-in.page";
-export { SignUpPage } from "./sign-up.page";
+export { DashboardPage } from "@/pages/dashboard.page";
+export { SignInPage } from "@/pages/sign-in.page";
+export { SignUpPage } from "@/pages/sign-up.page";

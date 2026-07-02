@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 
-import type { TestDataFactory } from "./test-data.factory";
+import type { TestDataFactory } from "@/factories/test-data.factory";
 
 export interface UserCredentials {
   fullName: string;

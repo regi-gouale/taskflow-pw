@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import type { UserCredentials } from "../factories/user.factory";
+import type { UserCredentials } from "@/factories/user.factory";
 
 export class SignUpPage {
   constructor(private readonly page: Page) {}
