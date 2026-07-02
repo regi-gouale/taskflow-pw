@@ -1,6 +1,19 @@
 import { expect, test } from "@/fixtures/page.fixture";
 
 test.describe("Inscription", () => {
+  test.beforeEach(async ({ signUpPage }) => {
+    await signUpPage.goto();
+    await signUpPage.expectLoaded();
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.context().clearCookies();
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+  });
+
   test("crée réellement un utilisateur unique", async ({
     page,
     testData,
@@ -8,8 +21,6 @@ test.describe("Inscription", () => {
   }) => {
     const user = testData.user();
 
-    await signUpPage.goto();
-    await signUpPage.expectLoaded();
     await signUpPage.signUp(user);
 
     await expect(signUpPage.successAlert).toBeVisible();
@@ -23,8 +34,6 @@ test.describe("Inscription", () => {
   }) => {
     const user = testData.user();
 
-    await signUpPage.goto();
-    await signUpPage.expectLoaded();
     await signUpPage.fillForm(user);
 
     await expect(signUpPage.passwordHint).toBeVisible();
@@ -39,8 +48,6 @@ test.describe("Inscription", () => {
   }) => {
     const user = testData.user();
 
-    await signUpPage.goto();
-    await signUpPage.expectLoaded();
     await signUpPage.signUp(user, "different-password");
 
     await expect(signUpPage.passwordMismatchAlert).toBeVisible();
@@ -54,8 +61,6 @@ test.describe("Inscription", () => {
   }) => {
     const user = testData.user();
 
-    await signUpPage.goto();
-    await signUpPage.expectLoaded();
     await signUpPage.fillForm({
       ...user,
       fullName: "",
@@ -74,8 +79,6 @@ test.describe("Inscription", () => {
     signInPage,
     signUpPage,
   }) => {
-    await signUpPage.goto();
-    await signUpPage.expectLoaded();
     await signUpPage.goToSignIn();
 
     await expect(page).toHaveURL(/\/sign-in$/);

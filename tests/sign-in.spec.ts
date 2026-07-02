@@ -1,6 +1,19 @@
 import { expect, test } from "@/fixtures/page.fixture";
 
 test.describe("Connexion", () => {
+  test.beforeEach(async ({ signInPage }) => {
+    await signInPage.goto();
+    await signInPage.expectLoaded();
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.context().clearCookies();
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+  });
+
   test("connecte réellement un utilisateur existant", async ({
     page,
     testData,
@@ -31,15 +44,11 @@ test.describe("Connexion", () => {
   test("affiche les champs de connexion et les liens associés", async ({
     signInPage,
   }) => {
-    await signInPage.goto();
-    await signInPage.expectLoaded();
     await expect(signInPage.forgotPasswordLink).toBeVisible();
     await expect(signInPage.createAccountLink).toBeVisible();
   });
 
   test("gère un email invalide", async ({ page, signInPage }) => {
-    await signInPage.goto();
-    await signInPage.expectLoaded();
     await signInPage.signIn("email-invalide", "azertyuiop");
 
     await expect(page).toHaveURL(/\/sign-in$/);
@@ -50,8 +59,6 @@ test.describe("Connexion", () => {
     page,
     signInPage,
   }) => {
-    await signInPage.goto();
-    await signInPage.expectLoaded();
     await signInPage.signIn("", "");
 
     await expect(page).toHaveURL(/\/sign-in$/);
@@ -68,8 +75,6 @@ test.describe("Connexion", () => {
       password: "wrong-password",
     });
 
-    await signInPage.goto();
-    await signInPage.expectLoaded();
     await signInPage.signIn(unknownUser.email, unknownUser.password);
 
     await expect(signInPage.invalidCredentialsAlert).toBeVisible();
@@ -80,8 +85,6 @@ test.describe("Connexion", () => {
     page,
     signInPage,
   }) => {
-    await signInPage.goto();
-    await signInPage.expectLoaded();
     await signInPage.goToSignUp();
 
     await expect(page).toHaveURL(/\/sign-up$/);
@@ -94,8 +97,6 @@ test.describe("Connexion", () => {
     page,
     signInPage,
   }) => {
-    await signInPage.goto();
-    await signInPage.expectLoaded();
     await signInPage.goToForgotPassword();
 
     await expect(page).toHaveURL(/\/forgot-password$/);
