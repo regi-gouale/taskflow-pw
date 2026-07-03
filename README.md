@@ -71,3 +71,15 @@ bun run test
 bun run allure:generate
 bun run allure:open
 ```
+
+## Rapport Allure dans la CI
+
+Le workflow GitHub Actions publie automatiquement le rapport Allure sur GitHub Pages après un push sur `main`.
+
+Le rapport publié est accessible via l'URL GitHub Pages du dépôt, une fois Pages activé dans les paramètres du repository.
+
+Si tu veux régénérer le rapport localement avant publication :
+
+```bash
+bun run allure:generate
+```
