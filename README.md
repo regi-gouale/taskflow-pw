@@ -76,6 +76,14 @@ bun run allure:open
 
 Le workflow GitHub Actions publie automatiquement le rapport Allure sur GitHub Pages après un push sur `main`.
 
+Variables/secrets CI requis (Settings > Secrets and variables > Actions) :
+
+- Secret `E2E_EMAIL`
+- Secret `E2E_PASSWORD`
+- Variable `APP_BASE_URL` (ex: `https://taskflow.gouale.com`)
+
+Le workflow accepte aussi `E2E_EMAIL` et `E2E_PASSWORD` en variables repository, mais les secrets sont recommandes.
+
 Le rapport publié est accessible via l'URL GitHub Pages du dépôt, une fois Pages activé dans les paramètres du repository.
 
 Si tu veux régénérer le rapport localement avant publication :
