@@ -10,6 +10,7 @@
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
+    "test:debug": "PWDEBUG=1 playwright test",
     "format": "biome format",
     "format:write": "biome format --write",
     "lint": "biome lint",
