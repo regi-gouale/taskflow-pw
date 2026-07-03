@@ -22,6 +22,13 @@ bun run test:ui
 bun run test:debug
 ```
 
+Les tests génèrent aussi des résultats Allure dans `allure-results/`.
+Pour ouvrir un rapport HTML Allure après une exécution :
+
+```bash
+bun run allure:report
+```
+
 ## Lancer les tests API
 
 Configuration minimale (optionnelle mais recommandee) :
@@ -52,3 +59,15 @@ Ne pas utiliser `bun test` pour ce projet.
 - `bun test` lance le runner de tests Bun.
 - Nos fichiers `tests/*.spec.ts` utilisent le runner Playwright.
 - Le bon usage est `bun run test` (script Playwright défini dans `package.json`).
+
+## Allure
+
+Le projet est configuré avec `allure-playwright` dans `playwright.config.ts`.
+
+Commandes utiles :
+
+```bash
+bun run test
+bun run allure:generate
+bun run allure:open
+```
