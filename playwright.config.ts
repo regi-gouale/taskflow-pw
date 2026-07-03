@@ -16,6 +16,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
   },
+  globalSetup: "./utils/global-setup.ts",
   projects: [
     {
       name: "chromium",
@@ -28,6 +29,7 @@ export default defineConfig({
       use: {
         baseURL: process.env.API_BASE_URL ?? appBaseUrl,
         trace: "retain-on-failure",
+        storageState: "playwright/.auth/user.json",
       },
     },
   ],
