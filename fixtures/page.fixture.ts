@@ -19,6 +19,12 @@ type PageFixtures = {
   tasksPage: TasksPage;
 };
 
+const authStorageStatePath = "playwright/.auth/user.json";
+
+function isRedirectedToSignIn(url: string): boolean {
+  return /\/sign-in(?:[/?#]|$)/.test(url);
+}
+
 const authenticatedUser: UserCredentials = {
   fullName: "Taskflow E2E",
   email: process.env.E2E_EMAIL ?? "test@taskflow.dev",
@@ -31,10 +37,23 @@ export const test = base.extend<PageFixtures>({
     await use(authenticatedUser);
   },
   authenticatedPage: async (
-    { authenticatedUser, dashboardPage, page },
+    { authenticatedUser, dashboardPage, page, signInPage },
     use,
   ) => {
     await page.goto("/dashboard");
+
+    if (isRedirectedToSignIn(page.url())) {
+      await signInPage.expectLoaded();
+      await signInPage.signIn(
+        authenticatedUser.email,
+        authenticatedUser.password,
+      );
+      await dashboardPage.expectLoaded();
+
+      // Refresh persisted auth state so the next tests reuse a valid session.
+      await page.context().storageState({ path: authStorageStatePath });
+    }
+
     await dashboardPage.expectLoaded();
     await dashboardPage.expectUserEmailVisible(authenticatedUser.email);
 

@@ -1,4 +1,5 @@
-import { expect, request, test } from "@playwright/test";
+import { request } from "@playwright/test";
+import { expect, test } from "@/fixtures/api.fixture";
 
 const attemptSignIn = async (
   anon: Awaited<ReturnType<typeof request.newContext>>,
