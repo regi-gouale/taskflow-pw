@@ -1,12 +1,19 @@
 import type { Page } from "@playwright/test";
 import type { UserCredentials } from "@/factories/user.factory";
 import { test as base, expect } from "@/fixtures/test-data.fixture";
-import { DashboardPage, SignInPage, SignUpPage, TasksPage } from "@/pages";
+import {
+  DashboardPage,
+  ProjectsPage,
+  SignInPage,
+  SignUpPage,
+  TasksPage,
+} from "@/pages";
 
 type PageFixtures = {
   authenticatedPage: Page;
   authenticatedUser: UserCredentials;
   dashboardPage: DashboardPage;
+  projectsPage: ProjectsPage;
   signInPage: SignInPage;
   signUpPage: SignUpPage;
   tasksPage: TasksPage;
@@ -47,6 +54,9 @@ export const test = base.extend<PageFixtures>({
   },
   dashboardPage: async ({ page }, use) => {
     await use(new DashboardPage(page));
+  },
+  projectsPage: async ({ page }, use) => {
+    await use(new ProjectsPage(page));
   },
   signInPage: async ({ page }, use) => {
     await use(new SignInPage(page));
