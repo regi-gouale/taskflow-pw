@@ -39,6 +39,7 @@ node_modules/
 /playwright-report/
 /allure-results/
 /allure-report/
+/allure-history/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
