@@ -1,5 +1,7 @@
 import { test as base, expect } from "@playwright/test";
 import * as allure from "allure-js-commons/sync";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import {
   type TeamMemberData,
   teamMemberFactory,
@@ -30,9 +32,8 @@ export const test = base.extend<TestDataFixtures>({
     async ({}, use: () => Promise<void>) => {
       allure.parameter(
         "Heure de début",
-        new Date().toLocaleString("fr-FR", {
-          dateStyle: "medium",
-          timeStyle: "medium",
+        format(new Date(), "Pp", {
+          locale: fr,
         }),
       );
 

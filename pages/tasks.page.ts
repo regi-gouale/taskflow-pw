@@ -1,4 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const escapeRegex = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -114,23 +116,16 @@ export class TasksPage {
     dialog: Locator,
     offsetDays: number,
   ): Promise<void> {
-    const expectedIsoDate = await this.page.evaluate((offset) => {
-      const d = new Date();
-      d.setDate(d.getDate() + offset);
-      d.setHours(0, 0, 0, 0);
-      return d.toISOString().slice(0, 10);
-    }, offsetDays);
+    const expectedDate = new Date();
+    expectedDate.setDate(expectedDate.getDate() + offsetDays);
+    expectedDate.setHours(0, 0, 0, 0);
 
-    const expectedLabel = await this.page.evaluate((offset) => {
-      const d = new Date();
-      d.setDate(d.getDate() + offset);
-      return new Intl.DateTimeFormat("fr-FR", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }).format(d);
-    }, offsetDays);
+    const expectedLocalDateKey = format(expectedDate, "yyyy-MM-dd", {
+      locale: fr,
+    });
+    const expectedLabel = format(expectedDate, "EEEE d MMMM yyyy", {
+      locale: fr,
+    });
 
     await dialog.getByTestId("task-due-trigger").click();
 
@@ -142,7 +137,7 @@ export class TasksPage {
       await targetDateButton.click({ timeout: 5000 });
     } catch {
       const exactDay = this.page.locator(
-        `[data-slot="calendar-day"][data-day="${expectedIsoDate}"]:not([disabled])`,
+        `[data-slot="calendar-day"][data-day="${expectedLocalDateKey}"]:not([disabled])`,
       );
 
       if ((await exactDay.count()) > 0) {

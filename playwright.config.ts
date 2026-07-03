@@ -1,6 +1,7 @@
+import "dotenv/config";
 import { defineConfig, devices } from "@playwright/test";
 
-const appBaseUrl = process.env.APP_BASE_URL ?? "https://taskflow.gouale.com";
+const appBaseUrl = process.env.APP_BASE_URL ?? "http://localhost:3000";
 
 export default defineConfig({
   testDir: "./tests",

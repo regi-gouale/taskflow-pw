@@ -31,8 +31,10 @@ const extractTasksFromPayload = (payload: unknown): TaskLike[] => {
 const extractTaskFromPayload = (payload: unknown): TaskLike | null => {
   if (payload && typeof payload === "object" && !Array.isArray(payload)) {
     const obj = payload as Record<string, unknown>;
-    if (obj.data && typeof obj.data === "object") return obj.data as TaskLike;
-    if (obj.task && typeof obj.task === "object") return obj.task as TaskLike;
+    if (obj.data && typeof obj.data === "object" && !Array.isArray(obj.data))
+      return obj.data as TaskLike;
+    if (obj.task && typeof obj.task === "object" && !Array.isArray(obj.task))
+      return obj.task as TaskLike;
     return obj as TaskLike;
   }
   return null;
