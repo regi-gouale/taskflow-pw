@@ -7,6 +7,7 @@ import {
   SignInPage,
   SignUpPage,
   TasksPage,
+  TeamPage,
 } from "@/pages";
 
 type PageFixtures = {
@@ -16,37 +17,45 @@ type PageFixtures = {
   projectsPage: ProjectsPage;
   signInPage: SignInPage;
   signUpPage: SignUpPage;
+  teamPage: TeamPage;
   tasksPage: TasksPage;
 };
 
+const authStorageStatePath = "playwright/.auth/user.json";
+
+function isRedirectedToSignIn(url: string): boolean {
+  return /\/sign-in(?:[/?#]|$)/.test(url);
+}
+
+const authenticatedUser: UserCredentials = {
+  fullName: "Taskflow E2E",
+  email: process.env.E2E_EMAIL ?? "test@taskflow.dev",
+  password: process.env.E2E_PASSWORD ?? "Password123!",
+};
+
 export const test = base.extend<PageFixtures>({
-  authenticatedUser: async ({ dashboardPage, signUpPage, testData }, use) => {
-    const user = testData.user();
-
-    await signUpPage.goto();
-    await signUpPage.signUp(user);
-    await expect(signUpPage.successAlert).toBeVisible();
-    await dashboardPage.expectLoaded();
-    await dashboardPage.expectUserEmailVisible(user.email);
-
-    await use(user);
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright fixtures require object destructuring as first argument.
+  authenticatedUser: async ({}, use) => {
+    await use(authenticatedUser);
   },
   authenticatedPage: async (
     { authenticatedUser, dashboardPage, page, signInPage },
     use,
   ) => {
-    await page.context().clearCookies();
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
+    await page.goto("/dashboard");
 
-    await signInPage.goto();
-    await signInPage.expectLoaded();
-    await signInPage.signIn(
-      authenticatedUser.email,
-      authenticatedUser.password,
-    );
+    if (isRedirectedToSignIn(page.url())) {
+      await signInPage.expectLoaded();
+      await signInPage.signIn(
+        authenticatedUser.email,
+        authenticatedUser.password,
+      );
+      await dashboardPage.expectLoaded();
+
+      // Refresh persisted auth state so the next tests reuse a valid session.
+      await page.context().storageState({ path: authStorageStatePath });
+    }
+
     await dashboardPage.expectLoaded();
     await dashboardPage.expectUserEmailVisible(authenticatedUser.email);
 
@@ -63,6 +72,9 @@ export const test = base.extend<PageFixtures>({
   },
   signUpPage: async ({ page }, use) => {
     await use(new SignUpPage(page));
+  },
+  teamPage: async ({ page }, use) => {
+    await use(new TeamPage(page));
   },
   tasksPage: async ({ page }, use) => {
     await use(new TasksPage(page));

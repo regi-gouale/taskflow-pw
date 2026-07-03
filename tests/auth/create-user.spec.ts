@@ -1,5 +1,7 @@
 import { expect, test } from "@/fixtures/page.fixture";
 
+test.use({ storageState: { cookies: [], origins: [] } });
+
 test.describe("Inscription", () => {
   test.beforeEach(async ({ signUpPage }) => {
     await signUpPage.goto();

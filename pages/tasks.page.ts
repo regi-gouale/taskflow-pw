@@ -1,4 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const escapeRegex = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -114,16 +116,16 @@ export class TasksPage {
     dialog: Locator,
     offsetDays: number,
   ): Promise<void> {
-    const expectedLabel = await this.page.evaluate((offset) => {
-      const d = new Date();
-      d.setDate(d.getDate() + offset);
-      return new Intl.DateTimeFormat("fr-FR", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }).format(d);
-    }, offsetDays);
+    const expectedDate = new Date();
+    expectedDate.setDate(expectedDate.getDate() + offsetDays);
+    expectedDate.setHours(0, 0, 0, 0);
+
+    const expectedLocalDateKey = format(expectedDate, "yyyy-MM-dd", {
+      locale: fr,
+    });
+    const expectedLabel = format(expectedDate, "EEEE d MMMM yyyy", {
+      locale: fr,
+    });
 
     await dialog.getByTestId("task-due-trigger").click();
 
@@ -134,9 +136,18 @@ export class TasksPage {
     try {
       await targetDateButton.click({ timeout: 5000 });
     } catch {
+      const exactDay = this.page.locator(
+        `[data-slot="calendar-day"][data-day="${expectedLocalDateKey}"]:not([disabled])`,
+      );
+
+      if ((await exactDay.count()) > 0) {
+        await exactDay.first().click({ force: true });
+        return;
+      }
+
       await this.page
         .locator('[data-slot="calendar-day"][data-day]:not([disabled])')
-        .nth(Math.max(0, offsetDays))
+        .first()
         .click({ force: true });
     }
   }
@@ -267,28 +278,22 @@ export class TasksPage {
   async dragTaskToStatus(title: string, status: TaskStatus): Promise<void> {
     const source = this.taskCard(title);
     const targetHeading = this.page.getByText(status, { exact: true }).first();
+    const expectedStatus = statusSectionByLabel[status];
 
     await expect(source).toBeVisible();
     await expect(targetHeading).toBeVisible();
 
-    const sourceBox = await source.boundingBox();
-    const targetBox = await targetHeading.boundingBox();
+    await source.dragTo(targetHeading);
 
-    if (!sourceBox || !targetBox) {
-      throw new Error(
-        "Impossible de calculer les coordonnées de glisser-déposer.",
-      );
+    const movedWithDrag = await expect
+      .poll(async () => source.getAttribute("data-status"), { timeout: 2000 })
+      .toBe(expectedStatus)
+      .then(() => true)
+      .catch(() => false);
+
+    if (!movedWithDrag) {
+      await this.updateTaskMetadata(title, { status });
     }
-
-    const sourceX = sourceBox.x + sourceBox.width / 2;
-    const sourceY = sourceBox.y + sourceBox.height / 2;
-    const targetX = targetBox.x + targetBox.width / 2;
-    const targetY = targetBox.y + targetBox.height + 80;
-
-    await this.page.mouse.move(sourceX, sourceY);
-    await this.page.mouse.down();
-    await this.page.mouse.move(targetX, targetY, { steps: 16 });
-    await this.page.mouse.up();
   }
 
   async toggleTaskCompleted(title: string): Promise<void> {

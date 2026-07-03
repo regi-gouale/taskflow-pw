@@ -27,9 +27,9 @@ export class SignInPage {
   }
 
   get invalidCredentialsAlert(): Locator {
-    return this.page
-      .getByRole("listitem")
-      .filter({ hasText: "Invalid email or password" });
+    return this.page.getByRole("listitem").filter({
+      hasText: /Invalid email or password|Impossible de se connecter\./,
+    });
   }
 
   async goto(): Promise<void> {

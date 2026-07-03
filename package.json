@@ -7,9 +7,16 @@
   "private": true,
   "scripts": {
     "test": "playwright test",
+    "test:api": "playwright test --project=api",
     "test:headed": "playwright test --headed",
+    "test:ui-only": "playwright test --project=chromium",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
+    "test:allure": "sh -c 'rm -rf ./allure-results; playwright test \"$@\"; exit_code=$?; bun run allure:generate; bun run allure:history:update; exit $exit_code' --",
+    "allure:generate": "mkdir -p ./allure-history && rm -rf ./allure-report && allure awesome ./allure-results -o ./allure-report --report-name \"Taskflow E2E\" --history-path ./allure-history/history.jsonl --lang fr",
+    "allure:history:update": "mkdir -p ./allure-history && allure history ./allure-results --history-path ./allure-history/history.jsonl --report-name \"Taskflow E2E\"",
+    "allure:open": "allure open ./allure-report",
+    "allure:report": "bun run allure:generate && bun run allure:open",
     "test:debug": "PWDEBUG=1 playwright test",
     "format": "biome format",
     "format:write": "biome format --write",
@@ -21,13 +28,18 @@
     "@biomejs/biome": "2.5.2",
     "@playwright/test": "^1.61.1",
     "@types/bun": "^1.3.14",
-    "@types/node": "^26.1.0"
+    "@types/node": "^26.1.0",
+    "allure": "^3.14.0",
+    "allure-js-commons": "^3.10.2",
+    "allure-playwright": "^3.10.2",
+    "dotenv": "^17.4.2"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"
   },
   "dependencies": {
     "@faker-js/faker": "^10.5.0",
+    "date-fns": "^4.4.0",
     "playwright": "^1.61.1"
   }
 }
