@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+
+const appBaseUrl = process.env.APP_BASE_URL ?? "https://taskflow.gouale.com";
+
 export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
@@ -8,7 +11,7 @@ export default defineConfig({
   workers: 1,
   reporter: "html",
   use: {
-    baseURL: "https://taskflow.gouale.com",
+    baseURL: appBaseUrl,
     trace: "on",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -17,6 +20,15 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      testIgnore: ["tests/api/**"],
+    },
+    {
+      name: "api",
+      testMatch: ["tests/api/**/*.spec.ts"],
+      use: {
+        baseURL: process.env.API_BASE_URL ?? appBaseUrl,
+        trace: "retain-on-failure",
+      },
     },
   ],
 });
