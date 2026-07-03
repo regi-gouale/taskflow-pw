@@ -6,11 +6,11 @@ test.describe("API Auth - /api/v1/me", () => {
       return request.get("/api/v1/me");
     });
 
-    await test.step("Verifier le statut 200", async () => {
+    await test.step("Vérifier le statut 200", async () => {
       expect(res.status()).toBe(200);
     });
 
-    await test.step("Verifier le payload utilisateur", async () => {
+    await test.step("Vérifier le payload utilisateur", async () => {
       const body = await res.json();
       expect(body.ok).toBe(true);
       expect(body.data.email).toBeTruthy();
@@ -18,7 +18,7 @@ test.describe("API Auth - /api/v1/me", () => {
   });
 
   test("renvoie 401 sans cookie", async ({ baseURL }) => {
-    const anon = await test.step("Creer un contexte API anonyme", async () => {
+    const anon = await test.step("Créer un contexte API anonyme", async () => {
       return request.newContext({
         baseURL,
         storageState: { cookies: [], origins: [] },
@@ -30,7 +30,7 @@ test.describe("API Auth - /api/v1/me", () => {
         return anon.get("/api/v1/me");
       });
 
-    await test.step("Verifier le statut 401", async () => {
+    await test.step("Vérifier le statut 401", async () => {
       expect(res.status()).toBe(401);
     });
 
