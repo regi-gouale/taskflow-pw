@@ -1,5 +1,9 @@
 import { test as base, expect } from "@playwright/test";
 import * as allure from "allure-js-commons/sync";
+import {
+  type TeamMemberData,
+  teamMemberFactory,
+} from "@/factories/team-member.factory";
 import { type UserCredentials, userFactory } from "@/factories/user.factory";
 
 export type TestData = {
@@ -8,6 +12,11 @@ export type TestData = {
     count: number,
     overrides?: Partial<UserCredentials>,
   ) => UserCredentials[];
+  teamMember: (overrides?: Partial<TeamMemberData>) => TeamMemberData;
+  teamMembers: (
+    count: number,
+    overrides?: Partial<TeamMemberData>,
+  ) => TeamMemberData[];
 };
 
 type TestDataFixtures = {
@@ -36,6 +45,9 @@ export const test = base.extend<TestDataFixtures>({
     await use({
       user: (overrides = {}) => userFactory.build(overrides),
       users: (count, overrides = {}) => userFactory.buildMany(count, overrides),
+      teamMember: (overrides = {}) => teamMemberFactory.build(overrides),
+      teamMembers: (count, overrides = {}) =>
+        teamMemberFactory.buildMany(count, overrides),
     });
   },
 });

@@ -7,6 +7,7 @@ import {
   SignInPage,
   SignUpPage,
   TasksPage,
+  TeamPage,
 } from "@/pages";
 
 type PageFixtures = {
@@ -16,6 +17,7 @@ type PageFixtures = {
   projectsPage: ProjectsPage;
   signInPage: SignInPage;
   signUpPage: SignUpPage;
+  teamPage: TeamPage;
   tasksPage: TasksPage;
 };
 
@@ -70,6 +72,9 @@ export const test = base.extend<PageFixtures>({
   },
   signUpPage: async ({ page }, use) => {
     await use(new SignUpPage(page));
+  },
+  teamPage: async ({ page }, use) => {
+    await use(new TeamPage(page));
   },
   tasksPage: async ({ page }, use) => {
     await use(new TasksPage(page));
