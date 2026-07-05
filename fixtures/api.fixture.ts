@@ -1,6 +1,7 @@
 import type { APIRequestContext, APIResponse } from "@playwright/test";
 import type { UserCredentials } from "@/factories/user.factory";
 import { test as base, expect } from "@/fixtures/test-data.fixture";
+import { createCleanupTracker } from "@/utils/test-cleanup";
 
 type ApiFixtures = {
   signInPath: string;
@@ -70,7 +71,15 @@ export const test = base.extend<ApiFixtures>({
       await requestContext.storageState({ path: authStorageStatePath });
     }
 
+    const cleanupTracker = await createCleanupTracker(
+      playwright,
+      baseURL,
+      await requestContext.storageState(),
+    );
+
     await use(requestContext);
+
+    await cleanupTracker.cleanup(await requestContext.storageState());
     await requestContext.dispose();
   },
   // biome-ignore lint/correctness/noEmptyPattern: Playwright fixtures require object destructuring as first argument.

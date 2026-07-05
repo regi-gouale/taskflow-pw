@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, Response } from "@playwright/test";
 import type { UserCredentials } from "@/factories/user.factory";
 import { test as base, expect } from "@/fixtures/test-data.fixture";
 import {
@@ -9,8 +9,10 @@ import {
   TasksPage,
   TeamPage,
 } from "@/pages";
+import { createCleanupTracker } from "@/utils/test-cleanup";
 
 type PageFixtures = {
+  _autoDataCleanup: undefined;
   authenticatedPage: Page;
   authenticatedUser: UserCredentials;
   dashboardPage: DashboardPage;
@@ -34,6 +36,28 @@ const authenticatedUser: UserCredentials = {
 };
 
 export const test = base.extend<PageFixtures>({
+  _autoDataCleanup: [
+    async ({ baseURL, page, playwright }, use) => {
+      const tracker = await createCleanupTracker(
+        playwright,
+        baseURL,
+        await page.context().storageState(),
+      );
+
+      const handleResponse = (response: Response): void => {
+        void tracker.trackResponse(response);
+      };
+
+      page.on("response", handleResponse);
+
+      await use(undefined);
+
+      page.off("response", handleResponse);
+
+      await tracker.cleanup(await page.context().storageState());
+    },
+    { auto: true },
+  ],
   // biome-ignore lint/correctness/noEmptyPattern: Playwright fixtures require object destructuring as first argument.
   authenticatedUser: async ({}, use) => {
     await use(authenticatedUser);
