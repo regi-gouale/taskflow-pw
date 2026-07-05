@@ -75,6 +75,7 @@ bun run allure:open
 ## Rapport Allure dans la CI
 
 Le workflow GitHub Actions publie automatiquement le rapport Allure sur GitHub Pages après un push sur `main`.
+Avant de regénérer le rapport, il restaure le dernier fichier `allure-history/history.jsonl` publié sur Pages, puis republie la version mise à jour avec le nouveau rapport pour conserver les tendances d'un run au suivant.
 
 Variables/secrets CI requis (Settings > Secrets and variables > Actions) :
 

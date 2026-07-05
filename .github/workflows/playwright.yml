@@ -16,6 +16,7 @@ jobs:
       APP_BASE_URL: ${{ secrets.APP_BASE_URL }}
       E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      ALLURE_BUILD_ORDER: ${{ github.run_number }}
       CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
     - uses: actions/checkout@v4
@@ -66,16 +67,8 @@ jobs:
     - name: Setup Pages
       uses: actions/configure-pages@v5
       if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    - uses: oven-sh/setup-bun@v2
-      with:
-        bun-version: 1.3.14
-    - name: Install dependencies
-      run: bun install --frozen-lockfile
-    - name: Generate Allure report
-      run: bun run allure:generate
     - name: Check GitHub Pages availability
       id: pages_status
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
       env:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
@@ -88,10 +81,36 @@ jobs:
 
         if [ "$status_code" = "200" ]; then
           echo "enabled=true" >> "$GITHUB_OUTPUT"
+          echo "base_url=$(node -e \"const fs = require('node:fs'); const payload = JSON.parse(fs.readFileSync('/tmp/pages.json', 'utf8')); process.stdout.write(payload.html_url ?? '');\")" >> "$GITHUB_OUTPUT"
         else
           echo "enabled=false" >> "$GITHUB_OUTPUT"
           echo "::warning::GitHub Pages is not enabled or unavailable (HTTP $status_code). Skipping deployment."
         fi
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: 1.3.14
+    - name: Install dependencies
+      run: bun install --frozen-lockfile
+    - name: Restore previous Allure history
+      if: steps.pages_status.outputs.enabled == 'true'
+      run: |
+        mkdir -p allure-history
+        history_url="${{ steps.pages_status.outputs.base_url }}"
+        history_url="${history_url%/}/allure-history/history.jsonl"
+
+        if curl -fsSL "$history_url" -o allure-history/history.jsonl; then
+          echo "Restored Allure history from $history_url"
+        else
+          echo "::warning::No previous Allure history found at $history_url. Continuing without history."
+        fi
+    - name: Generate Allure report
+      run: bun run allure:generate
+    - name: Update Allure history
+      run: bun run allure:history:update
+    - name: Bundle Allure history for next run
+      run: |
+        mkdir -p allure-report/allure-history
+        cp allure-history/history.jsonl allure-report/allure-history/history.jsonl
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
