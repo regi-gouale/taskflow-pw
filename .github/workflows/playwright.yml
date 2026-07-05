@@ -81,7 +81,8 @@ jobs:
 
         if [ "$status_code" = "200" ]; then
           echo "enabled=true" >> "$GITHUB_OUTPUT"
-          echo "base_url=$(node -e \"const fs = require('node:fs'); const payload = JSON.parse(fs.readFileSync('/tmp/pages.json', 'utf8')); process.stdout.write(payload.html_url ?? '');\")" >> "$GITHUB_OUTPUT"
+          base_url=$(jq -r '.html_url // ""' /tmp/pages.json)
+          echo "base_url=${base_url}" >> "$GITHUB_OUTPUT"
         else
           echo "enabled=false" >> "$GITHUB_OUTPUT"
           echo "::warning::GitHub Pages is not enabled or unavailable (HTTP $status_code). Skipping deployment."
