@@ -1,7 +1,11 @@
+import { networkInterceptionFactory } from "@/factories/network-interception.factory";
 import { expect, test } from "@/fixtures/page.fixture";
 import type { ProjectsPage } from "@/pages";
 
 const projectRoutePattern = "**/api/v1/projects**";
+
+const projectCreationCases =
+  networkInterceptionFactory.buildProjectCreationCases();
 
 const buildProjectName = (prefix: string): string =>
   `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -36,95 +40,62 @@ test.describe("Interceptions réseau - projets", () => {
     });
   });
 
-  test("simule une erreur serveur lors de la création d'un projet", async ({
-    page,
-    projectsPage,
-  }) => {
-    const projectName = buildProjectName("network-project-server-error");
-    let intercepted = false;
+  for (const projectCase of projectCreationCases) {
+    test(projectCase.title, async ({ page, projectsPage }) => {
+      const projectName = buildProjectName(projectCase.namePrefix);
+      let intercepted = false;
 
-    await page.route(projectRoutePattern, async (route) => {
-      if (route.request().method() !== "POST") {
-        await route.continue();
-        return;
-      }
+      await page.route(projectRoutePattern, async (route) => {
+        if (route.request().method() !== "POST") {
+          await route.continue();
+          return;
+        }
 
-      intercepted = true;
-      await route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: JSON.stringify({
-          ok: false,
-          message: "Internal Server Error",
-        }),
-      });
-    });
+        if (projectCase.action === "server-error") {
+          intercepted = true;
+          await route.fulfill({
+            status: 500,
+            contentType: "application/json",
+            body: JSON.stringify({
+              ok: false,
+              message: "Internal Server Error",
+            }),
+          });
+          return;
+        }
 
-    await test.step("Soumettre un nouveau projet", async () => {
-      await submitProject(projectsPage, projectName);
-    });
+        if (projectCase.action === "slow-network") {
+          await new Promise((resolve) => {
+            setTimeout(resolve, projectCase.delayMs ?? 1200);
+          });
 
-    await test.step("Vérifier qu'aucun projet n'est créé", async () => {
-      expect(intercepted).toBe(true);
-      await expect(projectsPage.projectCard(projectName)).toHaveCount(0);
-    });
-  });
+          await route.fallback();
+          return;
+        }
 
-  test("simule un réseau lent lors de la création d'un projet", async ({
-    page,
-    projectsPage,
-  }) => {
-    const projectName = buildProjectName("network-project-slow");
-
-    await page.route(projectRoutePattern, async (route) => {
-      if (route.request().method() !== "POST") {
-        await route.continue();
-        return;
-      }
-
-      await new Promise((resolve) => {
-        setTimeout(resolve, 1200);
+        intercepted = true;
+        await route.abort("blockedbyclient");
       });
 
-      await route.fallback();
+      const startedAt = performance.now();
+
+      await test.step("Soumettre un nouveau projet", async () => {
+        await submitProject(projectsPage, projectName);
+      });
+
+      await test.step("Vérifier le résultat attendu", async () => {
+        if (projectCase.shouldIntercept) {
+          expect(intercepted).toBe(true);
+        }
+
+        if (projectCase.shouldBeCreated) {
+          await expect(projectsPage.projectCard(projectName)).toBeVisible();
+          expect(performance.now() - startedAt).toBeGreaterThanOrEqual(1100);
+          return;
+        }
+
+        await expect(projectsPage.projectCard(projectName)).toHaveCount(0);
+      });
     });
-
-    const startedAt = performance.now();
-
-    await test.step("Créer le projet via l'interface", async () => {
-      await submitProject(projectsPage, projectName);
-    });
-
-    await test.step("Vérifier le délai et l'affichage du projet", async () => {
-      await expect(projectsPage.projectCard(projectName)).toBeVisible();
-      expect(performance.now() - startedAt).toBeGreaterThanOrEqual(1100);
-    });
-  });
-
-  test("bloque la requête de création d'un projet", async ({
-    page,
-    projectsPage,
-  }) => {
-    const projectName = buildProjectName("network-project-blocked");
-    let intercepted = false;
-
-    await page.route(projectRoutePattern, async (route) => {
-      if (route.request().method() !== "POST") {
-        await route.continue();
-        return;
-      }
-
-      intercepted = true;
-      await route.abort("blockedbyclient");
-    });
-
-    await test.step("Tenter de créer le projet", async () => {
-      await submitProject(projectsPage, projectName);
-    });
-
-    await test.step("Vérifier que le projet n'a pas été créé", async () => {
-      expect(intercepted).toBe(true);
-      await expect(projectsPage.projectCard(projectName)).toHaveCount(0);
-    });
-  });
+  }
 });

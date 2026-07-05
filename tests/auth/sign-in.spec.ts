@@ -1,8 +1,15 @@
+import { signInTestCaseFactory } from "@/factories/sign-in.factory";
 import { expect, test } from "@/fixtures/page.fixture";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
 const signInRoutePattern = "**/api/auth/sign-in**";
+
+const signInValidationCases = signInTestCaseFactory.buildValidationCases();
+
+const signInNavigationCases = signInTestCaseFactory.buildNavigationCases();
+
+const signInNetworkCases = signInTestCaseFactory.buildNetworkCases();
 
 test.describe("Connexion", () => {
   test.beforeEach(async ({ signInPage }) => {
@@ -61,28 +68,16 @@ test.describe("Connexion", () => {
     });
   });
 
-  test("gère un email invalide", async ({ page, signInPage }) => {
-    await test.step("Soumettre un format d'email invalide", async () => {
-      await signInPage.signIn("email-invalide", "azertyuiop");
-    });
+  signInValidationCases.forEach((signInCase) => {
+    test(signInCase.title, async ({ page, signInPage }) => {
+      await test.step("Soumettre le formulaire de connexion", async () => {
+        await signInPage.signIn(signInCase.email, signInCase.password);
+      });
 
-    await test.step("Vérifier qu'on reste sur la page de connexion", async () => {
-      await expect(page).toHaveURL(/\/sign-in$/);
-      await expect(signInPage.emailInput).toHaveValue("email-invalide");
-    });
-  });
-
-  test("refuse une connexion quand les champs sont vides", async ({
-    page,
-    signInPage,
-  }) => {
-    await test.step("Soumettre le formulaire vide", async () => {
-      await signInPage.signIn("", "");
-    });
-
-    await test.step("Vérifier l'absence de navigation", async () => {
-      await expect(page).toHaveURL(/\/sign-in$/);
-      await expect(signInPage.emailInput).toHaveValue("");
+      await test.step("Vérifier qu'on reste sur la page de connexion", async () => {
+        await expect(page).toHaveURL(/\/sign-in$/);
+        await expect(signInPage.emailInput).toHaveValue(signInCase.email);
+      });
     });
   });
 
@@ -108,109 +103,71 @@ test.describe("Connexion", () => {
     });
   });
 
-  test("fournit la navigation vers la page d'inscription", async ({
-    page,
-    signInPage,
-  }) => {
-    await test.step("Cliquer sur le lien d'inscription", async () => {
-      await signInPage.goToSignUp();
-    });
+  signInNavigationCases.forEach((navigationCase) => {
+    test(navigationCase.title, async ({ page, signInPage }) => {
+      await test.step("Déclencher la navigation", async () => {
+        if (navigationCase.action === "sign-up") {
+          await signInPage.goToSignUp();
+          return;
+        }
 
-    await test.step("Vérifier la page d'inscription", async () => {
-      await expect(page).toHaveURL(/\/sign-up$/);
-      await expect(
-        page.getByText("Créer un compte", { exact: true }),
-      ).toBeVisible();
-    });
-  });
-
-  test("fournit la navigation vers mot de passe oublié", async ({
-    page,
-    signInPage,
-  }) => {
-    await test.step("Cliquer sur mot de passe oublié", async () => {
-      await signInPage.goToForgotPassword();
-    });
-
-    await test.step("Vérifier la navigation vers forgot-password", async () => {
-      await expect(page).toHaveURL(/\/forgot-password$/);
-    });
-  });
-
-  test("simule une erreur serveur lors de la connexion", async ({
-    page,
-    signInPage,
-  }) => {
-    let intercepted = false;
-
-    await page.route(signInRoutePattern, async (route) => {
-      intercepted = true;
-
-      await route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: JSON.stringify({
-          ok: false,
-          message: "Internal Server Error",
-        }),
-      });
-    });
-
-    await test.step("Soumettre le formulaire de connexion", async () => {
-      await signInPage.signIn("server-error@test.com", "Password123!");
-    });
-
-    await test.step("Vérifier que la page reste sur la connexion", async () => {
-      expect(intercepted).toBe(true);
-      await expect(page).toHaveURL(/\/sign-in$/);
-    });
-  });
-
-  test("simule un réseau lent lors de la connexion", async ({
-    page,
-    signInPage,
-  }) => {
-    await page.route(signInRoutePattern, async (route) => {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 1200);
+        await signInPage.goToForgotPassword();
       });
 
-      await route.fulfill({
-        status: 401,
-        contentType: "application/json",
-        body: JSON.stringify({
-          error: "Invalid email or password",
-        }),
+      await test.step("Vérifier la destination", async () => {
+        await expect(page).toHaveURL(navigationCase.expectedUrl);
+
+        if (navigationCase.shouldAssertCreateAccountHeading) {
+          await expect(
+            page.getByText("Créer un compte", { exact: true }),
+          ).toBeVisible();
+        }
       });
-    });
-
-    const startedAt = performance.now();
-
-    await test.step("Soumettre la connexion avec délai", async () => {
-      await signInPage.signIn("slow-network@test.com", "wrong-password");
-    });
-
-    await test.step("Attendre l'erreur après le délai réseau", async () => {
-      await expect(signInPage.invalidCredentialsAlert).toBeVisible();
-      expect(performance.now() - startedAt).toBeGreaterThanOrEqual(1100);
     });
   });
 
-  test("bloque la requête de connexion", async ({ page, signInPage }) => {
-    let intercepted = false;
+  signInNetworkCases.forEach((networkCase) => {
+    test(networkCase.title, async ({ page, signInPage }) => {
+      let intercepted = false;
 
-    await page.route(signInRoutePattern, async (route) => {
-      intercepted = true;
-      await route.abort("blockedbyclient");
-    });
+      await page.route(signInRoutePattern, async (route) => {
+        intercepted = true;
 
-    await test.step("Tenter de se connecter avec une requête bloquée", async () => {
-      await signInPage.signIn("blocked@test.com", "Password123!");
-    });
+        if (networkCase.action === "blocked") {
+          await route.abort("blockedbyclient");
+          return;
+        }
 
-    await test.step("Vérifier que la connexion n'a pas quitté la page", async () => {
-      expect(intercepted).toBe(true);
-      await expect(page).toHaveURL(/\/sign-in$/);
+        if (networkCase.action === "slow-network") {
+          await new Promise((resolve) => {
+            setTimeout(resolve, networkCase.delayMs ?? 1200);
+          });
+        }
+
+        await route.fulfill({
+          status: networkCase.responseStatus ?? 500,
+          contentType: "application/json",
+          body: JSON.stringify(networkCase.responseBody ?? {}),
+        });
+      });
+
+      const startedAt = performance.now();
+
+      await test.step("Soumettre le formulaire de connexion", async () => {
+        await signInPage.signIn(networkCase.email, networkCase.password);
+      });
+
+      await test.step("Vérifier le comportement attendu", async () => {
+        expect(intercepted).toBe(true);
+
+        if (networkCase.shouldExpectInvalidCredentialsAlert) {
+          await expect(signInPage.invalidCredentialsAlert).toBeVisible();
+          expect(performance.now() - startedAt).toBeGreaterThanOrEqual(1100);
+          return;
+        }
+
+        await expect(page).toHaveURL(/\/sign-in$/);
+      });
     });
   });
 });

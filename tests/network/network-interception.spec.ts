@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { networkInterceptionFactory } from "@/factories/network-interception.factory";
 import { expect, test } from "@/fixtures/page.fixture";
 
 type FetchResult = {
@@ -8,6 +9,8 @@ type FetchResult = {
 };
 
 const mockEndpoint = "/api/network-mocks/sign-in";
+
+const mockEndpointCases = networkInterceptionFactory.buildMockEndpointCases();
 
 const fetchMockedEndpoint = async (page: Page): Promise<FetchResult> => {
   return page.evaluate(async (endpoint) => {
@@ -43,106 +46,110 @@ test.describe("Interceptions réseau", () => {
     });
   });
 
-  test("simule une erreur serveur avec un mock de réponse", async ({
-    page,
-  }) => {
-    await page.route(`**${mockEndpoint}`, async (route) => {
-      await route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: JSON.stringify({
-          ok: false,
-          message: "Internal Server Error",
-        }),
-      });
-    });
+  for (const networkCase of mockEndpointCases) {
+    test(networkCase.title, async ({ page }) => {
+      let intercepted = false;
 
-    const response = await fetchMockedEndpoint(page);
+      await page.route(`**${mockEndpoint}`, async (route) => {
+        intercepted = true;
 
-    await test.step("Verifier la reponse mockee", async () => {
-      expect(response.status).toBe(500);
-      expect(response.ok).toBe(false);
-      expect(JSON.parse(response.text)).toEqual({
-        ok: false,
-        message: "Internal Server Error",
-      });
-    });
-  });
-
-  test("simule un reseau lent avant de renvoyer la reponse", async ({
-    page,
-  }) => {
-    await page.route(`**${mockEndpoint}`, async (route) => {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 1200);
-      });
-
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          ok: true,
-        }),
-      });
-    });
-
-    const elapsed = await page.evaluate(async (endpoint) => {
-      const startedAt = performance.now();
-
-      await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ email: "slow@test.com" }),
-      });
-
-      return performance.now() - startedAt;
-    }, mockEndpoint);
-
-    await test.step("Verifier que l'appel a ete retarde", async () => {
-      expect(elapsed).toBeGreaterThanOrEqual(1100);
-    });
-  });
-
-  test("bloque une requete avec abort", async ({ page }) => {
-    let intercepted = false;
-
-    await page.route(`**${mockEndpoint}`, async (route) => {
-      intercepted = true;
-      await route.abort("blockedbyclient");
-    });
-
-    const failure = await page.evaluate(async (endpoint) => {
-      try {
-        await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({ email: "blocked@test.com" }),
-        });
-
-        return null;
-      } catch (error) {
-        if (error instanceof Error) {
-          return {
-            name: error.name,
-            message: error.message,
-          };
+        if (networkCase.action === "blocked") {
+          await route.abort("blockedbyclient");
+          return;
         }
 
-        return {
-          name: "UnknownError",
-          message: String(error),
-        };
-      }
-    }, mockEndpoint);
+        if (networkCase.action === "slow-network") {
+          await new Promise((resolve) => {
+            setTimeout(resolve, networkCase.delayMs ?? 1200);
+          });
+        }
 
-    await test.step("Verifier que la requete a bien ete interceptee", async () => {
-      expect(intercepted).toBe(true);
-      expect(failure).not.toBeNull();
-      expect(failure?.name).toBe("TypeError");
+        await route.fulfill({
+          status: networkCase.responseStatus ?? 500,
+          contentType: "application/json",
+          body: JSON.stringify(networkCase.responseBody ?? {}),
+        });
+      });
+
+      if (networkCase.action === "server-error") {
+        const response = await fetchMockedEndpoint(page);
+
+        await test.step("Verifier la reponse mockee", async () => {
+          expect(response.status).toBe(networkCase.expectedStatus);
+          expect(response.ok).toBe(networkCase.expectedOk);
+          expect(JSON.parse(response.text)).toEqual(
+            networkCase.expectedResponseBody,
+          );
+        });
+        return;
+      }
+
+      if (networkCase.action === "slow-network") {
+        const elapsed = await page.evaluate(
+          async ({ endpoint, email }) => {
+            const startedAt = performance.now();
+
+            await fetch(endpoint, {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({ email }),
+            });
+
+            return performance.now() - startedAt;
+          },
+          {
+            endpoint: mockEndpoint,
+            email: networkCase.requestEmail,
+          },
+        );
+
+        await test.step("Verifier que l'appel a ete retarde", async () => {
+          expect(elapsed).toBeGreaterThanOrEqual(
+            networkCase.minElapsedMs ?? 1100,
+          );
+        });
+        return;
+      }
+
+      const failure = await page.evaluate(
+        async ({ endpoint, email }) => {
+          try {
+            await fetch(endpoint, {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+              },
+              body: JSON.stringify({ email }),
+            });
+
+            return null;
+          } catch (error) {
+            if (error instanceof Error) {
+              return {
+                name: error.name,
+                message: error.message,
+              };
+            }
+
+            return {
+              name: "UnknownError",
+              message: String(error),
+            };
+          }
+        },
+        {
+          endpoint: mockEndpoint,
+          email: networkCase.requestEmail,
+        },
+      );
+
+      await test.step("Verifier que la requete a bien ete interceptee", async () => {
+        expect(intercepted).toBe(true);
+        expect(failure).not.toBeNull();
+        expect(failure?.name).toBe(networkCase.expectedFailureName);
+      });
     });
-  });
+  }
 });
